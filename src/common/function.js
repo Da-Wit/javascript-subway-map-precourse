@@ -17,5 +17,15 @@ const Function = function () {
   this.clearResultDIV = () => {
     resultDIV.innerHTML = "";
   };
-  this.isBiggerThanTwo = (target) => target > 2;
+  this.isBiggerThanTwo = (target) => target >= 2;
 };
+
+export const {
+  setStateAndLocalSrorage,
+  isEmptyPage,
+  isAlreadyRenderedPage,
+  getFormattedStations,
+  getFormattedLines,
+  clearResultDIV,
+  isBiggerThanTwo,
+} = new Function();

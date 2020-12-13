@@ -1,4 +1,5 @@
 import { VALUE_IN_ARRAY, INDEX_OF_DATA } from "../state.js";
+import { getFormattedStations } from "./function.js";
 
 const Visualization = function () {
   this.setAttributes = (tag, attributes) => {
@@ -69,4 +70,15 @@ const Visualization = function () {
       stations
     );
   };
+  this.createTd = (text) => this.getAdvancedEle("td", null, text || null);
 };
+
+export const {
+  getAdvancedEle,
+  convertDataArrayToElementArray,
+  appendChildrenToParent,
+  appendRecursiveChild,
+  getTableHavingTableHead,
+  createStationOptions,
+  createTd,
+} = new Visualization();

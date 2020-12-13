@@ -18,4 +18,10 @@ const State = function () {
   this.INDEX_OF_DATA = "indexOfData";
 };
 
-export const { VALUE_IN_ARRAY, INDEX_OF_DATA } = new State();
+export const {
+  state,
+  setState,
+  resultDIV,
+  VALUE_IN_ARRAY,
+  INDEX_OF_DATA,
+} = new State();
