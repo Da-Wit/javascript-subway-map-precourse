@@ -1,21 +1,10 @@
 import { getFormattedLines } from "../common/function.js";
-import {
-  createLineList,
-  createLineTitle,
-} from "../containers/map_print_container.js";
-import { appendChildrenToParent } from "../common/visualization.js";
+import { appendALineElement } from "../containers/map_print_container.js";
 
 const MapPrintManager = function () {
-  this.render = (parent, line) => {
-    const lineTitle = createLineTitle(line.name);
-    const lineList = createLineList(line);
-    appendChildrenToParent(parent, lineTitle, lineList);
-  };
-
   this.renderMapPrint = (parent) => {
-    getFormattedLines().forEach((line) => {
-      this.render(parent, line);
-    });
+    const lines = getFormattedLines();
+    appendALineElement(lines, parent);
   };
 };
 

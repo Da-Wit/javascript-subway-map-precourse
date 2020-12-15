@@ -1,58 +1,23 @@
 import {
   getFormattedLines,
   getFormattedStations,
-  isBiggerThanTwo,
-  setStateAndLocalSrorage,
+  isBiggerThanOneWithoutSpace,
+  setStateAndLocalStorage,
 } from "../common/function.js";
 import {
-  appendChildrenToParent,
-  appendRecursiveChild,
-  getTableHavingTableHead,
-} from "../common/visualization.js";
-import {
-  createAddDiv,
-  createTableTitle,
-  createTbody,
-  createTr,
+  appendNewTr,
+  clearInputValue,
 } from "../containers/station_container.js";
 
 const StationManager = function () {
-  this.clearInputValue = (input) => {
-    input.value = "";
-  };
-
   this.isOverwritten = (inputValue) =>
     getFormattedStations().indexOf(inputValue) !== -1;
 
-  this.addButtonClickFunction = () => {
-    const input = document.getElementById("station-name-input");
-    if (!isBiggerThanTwo(input.value.length)) {
-      alert("Station name should be bigger than two.");
-      return;
-    }
-    if (this.isOverwritten(input.value)) {
-      alert("It's overwritten.");
-      return;
-    }
-    const nextStations = getFormattedStations().concat(input.value);
-    setStateAndLocalSrorage("stations", nextStations);
-    this.rerenderAfterAdding(input.value);
-    this.clearInputValue(input);
-  };
-  this.setAddButtonClickListener = () => {
-    const addButton = document.getElementById("station-add-button");
-    addButton.addEventListener("click", this.addButtonClickFunction);
-  };
-
-  this.initialRender = (parent) => {
-    const addDiv = createAddDiv();
-
-    const tableTitle = createTableTitle();
-    const table = getTableHavingTableHead("역 이름", "설정");
-    const tbody = createTbody(getFormattedStations());
-    appendRecursiveChild(parent, addDiv, tableTitle, [table, tbody]);
-    this.setDeleteButtonClickListener();
-  };
+  this.getFilteredLines = (station) =>
+    getFormattedLines().map((line) => {
+      line.sections = line.sections.filter((sections) => sections !== station);
+      return line;
+    });
 
   this.isContainedInLengthTwoSections = (stationName) => {
     let result = false;
@@ -66,47 +31,71 @@ const StationManager = function () {
     return result;
   };
 
-  this.getFilteredLines = (station) =>
-    getFormattedLines().map((line) => {
-      line.sections = line.sections.filter((sections) => sections !== station);
-      return line;
-    });
+  this.removeStationFromStateAndStorage = (stationName) => {
+    const nextStations = getFormattedStations().filter(
+      (station) => station !== stationName
+    );
+    const nextLines = this.getFilteredLines(stationName);
+    setStateAndLocalStorage("stations", nextStations);
+    setStateAndLocalStorage("lines", nextLines);
+  };
 
-  this.deleteButtonClickFuntion = ({ target }) => {
-    const { stationName } = target.dataset;
+  this.removeTr = (targetButton) => {
+    const tr = targetButton.parentElement.parentElement;
+    const tbody = tr.parentElement;
+    tbody.removeChild(tr);
+  };
+
+  this.deleteButtonClickFunction = ({ target: targetButton }) => {
+    const { stationName } = targetButton.dataset;
     if (this.isContainedInLengthTwoSections(stationName)) {
       alert("That station is contained in the line which has two sections.");
       return;
     }
     if (!confirm("정말로 삭제하시겠습니까?")) return;
-    const nextStations = getFormattedStations().filter(
-      (station) => station !== stationName
-    );
-    const nextLines = this.getFilteredLines(stationName);
-    setStateAndLocalSrorage("stations", nextStations);
-    setStateAndLocalSrorage("lines", nextLines);
-    this.rerenderAfterDeleting(target);
+    this.removeStationFromStateAndStorage(stationName);
+    this.removeTr(targetButton);
   };
-  this.setDeleteButtonClickListener = () => {
+
+  this.checkStationValidity = (inputValue) => {
+    const SMALLER_THAN_TWO =
+      "The Station name except space should be bigger than two.";
+    const OVERWRITTEN = "It's overwritten.";
+    if (!isBiggerThanOneWithoutSpace(inputValue))
+      return { value: false, errorMessage: SMALLER_THAN_TWO };
+    if (this.isOverwritten(inputValue))
+      return { value: false, errorMessage: OVERWRITTEN };
+    return { value: true };
+  };
+
+  this.setStationDeleteButtonClickListener = () => {
     const buttons = document.getElementsByClassName("station-delete-button");
     for (let i = 0; i < buttons.length; i++) {
-      buttons[i].addEventListener("click", this.deleteButtonClickFuntion);
+      buttons[i].addEventListener("click", this.deleteButtonClickFunction);
     }
   };
-  this.rerenderAfterAdding = (newStation) => {
-    const newTr = createTr(newStation);
-    const tbody = document.querySelector("tbody");
-    appendChildrenToParent(tbody, newTr);
-    this.setDeleteButtonClickListener();
+
+  this.addButtonClickFunction = () => {
+    const input = document.getElementById("station-name-input");
+    const validity = this.checkStationValidity(input.value);
+    if (!validity.value) {
+      alert(validity.errorMessage);
+      return;
+    }
+    const nextStations = getFormattedStations().concat(input.value);
+    setStateAndLocalStorage("stations", nextStations);
+    appendNewTr(input.value);
+    clearInputValue(input);
+    this.setStationDeleteButtonClickListener();
   };
-  this.rerenderAfterDeleting = (targetButton) => {
-    const targetTr = targetButton.parentElement.parentElement;
-    const tbody = targetTr.parentElement;
-    tbody.removeChild(targetTr);
-  };
+
+  this.setStationAddButtonClickListener = () =>
+    document
+      .getElementById("station-add-button")
+      .addEventListener("click", this.addButtonClickFunction);
 };
 
 export const {
-  initialRender,
-  setAddButtonClickListener,
+  setStationAddButtonClickListener,
+  setStationDeleteButtonClickListener,
 } = new StationManager();

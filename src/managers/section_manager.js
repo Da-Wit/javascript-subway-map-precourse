@@ -1,147 +1,110 @@
 import {
   getFormattedLines,
-  setStateAndLocalSrorage,
+  setStateAndLocalStorage,
   isBiggerThanTwo,
+  getSelectedLineSections,
 } from "../common/function.js";
+import { state, setState } from "../state.js";
 import {
-  appendChildrenToParent,
-  getAdvancedEle,
-} from "../common/visualization.js";
-import { state, setState, resultDIV } from "../state.js";
-import {
-  createAddSectionDIV,
-  createAddTitle,
-  createManagementTitleText,
-  createPrimaryTitle,
-  createSectionTable,
-  createSectionTr,
+  appendSpreadElements,
+  changeTableBody,
+  clearSectionInputs,
+  rerenderOnlyChange,
 } from "../containers/section_container.js";
 
 const SectionManager = function () {
-  this.changeManagementTitleText = (lineName) => {
-    const TitleElement = document.getElementById("line-management-title");
-    const newText = `${lineName} 관리`;
-    TitleElement.textContent = newText;
-  };
-
-  this.changeTableBody = () => {
-    const tbody = document.getElementById("section-tbody");
-    tbody.innerHTML = "";
-    const innerContents = createSectionTr();
-    appendChildrenToParent(tbody, ...innerContents);
-    this.setDeleteButtonClickEvent(this.onDeleteButtonClick);
-  };
-
   this.isExist = (sectionName, sections) =>
     sections.indexOf(sectionName) !== -1;
 
-  this.isOrderCorrect = (order, sections) =>
-    order >= 0 && order <= sections.length;
+  this.isOrderCorrect = (order, sectionLength) =>
+    order >= 0 && order <= sectionLength;
+
+  this.updateDataAndRerender = (updatedLines) => {
+    setStateAndLocalStorage("lines", updatedLines);
+    changeTableBody();
+    this.setDeleteButtonClickEvent();
+  };
+
+  this.checkSectionValidity = (section, order) => {
+    const sections = getSelectedLineSections();
+    if (order === "")
+      return {
+        value: false,
+        errorMessage: "Put something into input and try again.",
+      };
+    if (this.isExist(section, sections))
+      return { value: false, errorMessage: "This section is already added." };
+    if (!this.isOrderCorrect(parseInt(order, 10), sections.length))
+      return { value: false, errorMessage: "Section order isn't correct." };
+    return { value: true };
+  };
+
+  this.handleAddProcess = (sectionInput, orderInput) => {
+    const formattedLines = getFormattedLines();
+    formattedLines[state.selectedLineIndex].sections.splice(
+      orderInput.value,
+      0,
+      sectionInput.value
+    );
+    this.updateDataAndRerender(formattedLines);
+    clearSectionInputs(sectionInput, orderInput);
+  };
 
   this.onAddButtonClick = () => {
-    const newSectionName = document.getElementById("section-selector").value;
-    const newSectionOrder = document.getElementById("section-order-input")
-      .value;
-    if (newSectionOrder === "") {
-      alert("Put something into input and try again.");
-      return;
-    }
-    const sections = getFormattedLines()[state.selectedLineIndex].sections;
-    if (this.isExist(newSectionName, sections)) {
-      alert("This section is already added.");
-      return;
-    }
-    if (!this.isOrderCorrect(parseInt(newSectionOrder, 10), sections)) {
-      alert("Section order isn't correct.");
-      return;
-    }
-    const formattedLines = getFormattedLines();
-    const currentSections = formattedLines[state.selectedLineIndex].sections;
-    currentSections.splice(newSectionOrder, 0, newSectionName);
-    setStateAndLocalSrorage("lines", formattedLines);
-    this.changeTableBody();
+    const sectionName = document.getElementById("section-selector");
+    const orderInput = document.getElementById("section-order-input");
+    const validity = this.checkSectionValidity(
+      sectionName.value,
+      orderInput.value
+    );
+    if (!validity.value) alert(validity.errorMessage);
+    else this.handleAddProcess(sectionName, orderInput);
+  };
+
+  this.setAddButtonClickEvent = () => {
+    const button = document.getElementById("section-add-button");
+    button.addEventListener("click", this.onAddButtonClick);
   };
 
   this.onDeleteButtonClick = ({ target: { dataset } }) => {
-    const { lineIndex, sectionName } = dataset;
+    const { sectionName } = dataset;
     const lines = getFormattedLines();
-    if (!isBiggerThanTwo(lines[lineIndex].sections.length)) {
+    if (!isBiggerThanTwo(lines[state.selectedLineIndex].sections.length)) {
       alert(`You can't delete it because Sections are less than 2.`);
       return;
     }
     if (!confirm("정말로 노선에서 제거하겠습니까?")) return;
-    lines[lineIndex].sections = lines[lineIndex].sections.filter(
-      (section) => section !== sectionName
-    );
-    setStateAndLocalSrorage("lines", lines);
-    this.changeTableBody();
+    lines[state.selectedLineIndex].sections = lines[
+      state.selectedLineIndex
+    ].sections.filter((section) => section !== sectionName);
+    this.updateDataAndRerender(lines);
   };
 
-  this.setAddButtonClickEvent = (eventFunction) => {
-    const button = document.getElementById("section-add-button");
-    button.addEventListener("click", eventFunction);
-  };
-
-  this.setDeleteButtonClickEvent = (eventFunction) => {
+  this.setDeleteButtonClickEvent = () => {
     const buttons = document.getElementsByClassName("section-delete-button");
     for (let i = 0; i < buttons.length; i++) {
-      buttons[i].addEventListener("click", eventFunction);
+      buttons[i].addEventListener("click", this.onDeleteButtonClick);
     }
   };
-  this.appendDetails = (selectedLineName) => {
-    const managemenetTitle = createManagementTitleText(selectedLineName);
-    const addTitle = createAddTitle();
-    const addSectionDIV = createAddSectionDIV();
-    const sectionTable = createSectionTable();
-    appendChildrenToParent(
-      resultDIV,
-      managemenetTitle,
-      addTitle,
-      addSectionDIV,
-      sectionTable
-    );
 
-    this.setAddButtonClickEvent(this.onAddButtonClick);
-  };
-
-  this.rerenderOnlyChange = (lineName) => {
-    this.changeManagementTitleText(lineName);
-    this.changeTableBody();
-  };
-
-  this.onLineSelectionButtonClick = ({ target: button }) => {
-    const { lineIndex, lineName } = button.dataset;
-    const previousSelectedLineIndex = state.selectedLineIndex;
+  this.onLineSelectionButtonClick = ({ target }) => {
+    const { lineIndex, lineName } = target.dataset;
+    const wasItNull = state.selectedLineIndex === null;
     setState("selectedLineIndex", lineIndex);
-    if (previousSelectedLineIndex !== null) this.rerenderOnlyChange(lineName);
-    else this.appendDetails(lineName);
-    this.setDeleteButtonClickEvent(this.onDeleteButtonClick);
+    if (wasItNull) {
+      const resultDiv = target.parentElement;
+      appendSpreadElements(resultDiv, lineName);
+      this.setAddButtonClickEvent();
+    } else rerenderOnlyChange(lineName);
+    this.setDeleteButtonClickEvent();
   };
 
-  this.createLineSelectionButton = ({ name: lineName }, index) => {
-    const attributes = {
-      "data-line-index": index,
-      "data-line-name": lineName,
-      class: "section-line-menu-button",
-    };
-    const aButton = getAdvancedEle("button", attributes, lineName);
-    aButton.addEventListener("click", this.onLineSelectionButtonClick);
-    return aButton;
-  };
-
-  this.getLineSelectionButtonArray = () => {
-    const formattedLines = getFormattedLines();
-    const lineButtons = formattedLines.map((line, index) =>
-      this.createLineSelectionButton(line, index)
-    );
-    return lineButtons;
-  };
-
-  this.appendSectionElements = (parent) => {
-    const primaryTitle = createPrimaryTitle();
-    const lineSelectionButtons = this.getLineSelectionButtonArray();
-    appendChildrenToParent(parent, primaryTitle, ...lineSelectionButtons);
+  this.setLineSelectionButtonClickListener = () => {
+    const buttons = document.getElementsByClassName("section-line-menu-button");
+    for (let i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener("click", this.onLineSelectionButtonClick);
+    }
   };
 };
 
-export const { appendSectionElements } = new SectionManager();
+export const { setLineSelectionButtonClickListener } = new SectionManager();

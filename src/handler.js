@@ -1,27 +1,30 @@
-import { appendSectionElements } from "./managers/section_manager.js";
+import { setLineSelectionButtonClickListener } from "./managers/section_manager.js";
 import { renderMapPrint } from "./managers/map_print_manager.js";
-import { setState, resultDIV } from "./state.js";
-import { primaryRender as linePrimaryRender } from "./managers/line_manager.js";
+import { resultDIV } from "./state.js";
 import { clearResultDIV } from "./common/function.js";
 import {
-  initialRender as stationInitialRender,
-  setAddButtonClickListener,
+  setStationAddButtonClickListener,
+  setStationDeleteButtonClickListener,
 } from "./managers/station_manager.js";
+import { renderSection } from "./containers/section_container.js";
+import { initialRender as stationInitialRender } from "./containers/station_container.js";
+import { primaryRender } from "./containers/line_container.js";
 
 const Handler = function () {
   this.onStationButtonClick = () => {
     clearResultDIV();
     stationInitialRender(resultDIV);
-    setAddButtonClickListener();
+    setStationAddButtonClickListener();
+    setStationDeleteButtonClickListener();
   };
   this.onLineButtonClick = () => {
     clearResultDIV();
-    linePrimaryRender();
+    primaryRender(resultDIV);
   };
   this.onSectionButtonClick = () => {
-    setState("selectedLineIndex", null);
     clearResultDIV();
-    appendSectionElements(resultDIV);
+    renderSection(resultDIV);
+    setLineSelectionButtonClickListener();
   };
   this.onPrintButtonClick = () => {
     clearResultDIV();

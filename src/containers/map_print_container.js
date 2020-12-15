@@ -1,17 +1,14 @@
-import {
-  appendChildrenToParent,
-  convertDataArrayToElementArray,
-  getAdvancedEle,
-} from "../common/visualization.js";
+import { appendChildren } from "../common/visualization.js";
+import { createOneLineElements } from "../creator/map_print_creator.js";
 
 const MapPrintContainer = function () {
-  this.createLineTitle = (lineName) => getAdvancedEle("h2", null, lineName);
-  this.createLineList = (line) => {
-    const ul = document.createElement("ul");
-    const sections = convertDataArrayToElementArray("li", null, line.sections);
-    appendChildrenToParent(ul, ...sections);
-    return ul;
+  this.appendALineElement = (lines, parent) => {
+    lines.forEach((line) => {
+      const { lineTitle, lineUl, lineList } = createOneLineElements(line);
+      appendChildren(lineUl, ...lineList);
+      appendChildren(parent, lineTitle, lineUl);
+    });
   };
 };
 
-export const { createLineTitle, createLineList } = new MapPrintContainer();
+export const { appendALineElement } = new MapPrintContainer();
